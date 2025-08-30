@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node & pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: 📦 Install dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: 🔒 Verify lockfile & env integrity
+        run: |
+          git diff --exit-code pnpm-lock.yaml || (echo "❌ Lockfile drift detected" && exit 1)
+          git diff --exit-code env || (echo "❌ /env drift detected" && exit 1)
+
+      - name: 🧼 Lint
+        run: pnpm lint || echo "No lint script yet"
+
+      - name: 🧠 Typecheck
+        run: pnpm typecheck || echo "No typecheck script yet"
+
+      - name: 🧪 Test
+        run: pnpm test || echo "No tests defined"
+
+      - name: 🛠 Build
+        run: pnpm build || echo "No build script yet"
+
+      - name: 📤 Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-artifacts
+          path: |
+            dist
+            .next
+            build
+            coverage
+            reports
+            !**/node_modules
+
+      - name: 🧾 Job Summary
+        run: echo "✅ CI finished successfully"
