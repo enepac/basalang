@@ -1,10 +1,10 @@
 {
-  "name": "basalang-dev",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "name": "Basalang Dev Env",
+  "image": "mcr.microsoft.com/devcontainers/base:alpine",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:1": {},
-    "ghcr.io/devcontainers/features/pnpm:2": {
-      "version": "latest"
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18",
+      "installCorepack": true
     }
   },
   "customizations": {
@@ -12,9 +12,10 @@
       "extensions": [
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        "ms-azuretools.vscode-docker"
+        "bradlc.vscode-tailwindcss"
       ]
     }
   },
-  "postCreateCommand": "pnpm install"
+  "postCreateCommand": "corepack enable && pnpm install",
+  "remoteUser": "vscode"
 }
