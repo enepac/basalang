@@ -16,6 +16,6 @@
       ]
     }
   },
-  "postCreateCommand": "corepack enable && pnpm install",
+  "postCreateCommand": "corepack enable",
   "remoteUser": "vscode"
 }
