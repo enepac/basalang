@@ -14,3 +14,20 @@
 
 **Readiness for Stage 1:** ✅ Ready to scaffold Next.js app, Tailwind, and UI shell in `frontend/`.
 
+
+---
+
+## Phase 1 Kickoff (S1-T01)
+
+Scaffolded the web app using Next.js 14 with Tailwind, ESLint, and App Router under `phase/1`.  
+Used `npx create-next-app` with explicit alias and no `src/` nesting.  
+Proceeding next to implement the layout shell and route stubs.
+
+
+---
+
+## S1-T02
+
+Shell structure complete. Clean sidebar + content layout working with route placeholders.  
+Ready for health route and production deployment setup next.
+
