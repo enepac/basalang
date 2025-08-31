@@ -1,3 +1,5 @@
+import "../styles/globals.css";
+
 export const metadata = {
   title: "Basalang",
   description: "Stealth AI Interview Copilot",
