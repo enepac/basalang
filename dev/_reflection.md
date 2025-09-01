@@ -31,3 +31,21 @@ Proceeding next to implement the layout shell and route stubs.
 Shell structure complete. Clean sidebar + content layout working with route placeholders.  
 Ready for health route and production deployment setup next.
 
+
+---
+
+## S1-T03
+
+Deployment flow took extra time due to Vercel defaulting to `phase/0`.  
+Resolved by pushing `phase/1`, updating GitHub default, and removing invalid `vercel.json`.  
+Production deploy now operational — clean base for all future testing.
+
+
+---
+
+## S1-T05A
+
+Clerk added to frontend as auth backbone.  
+Install required cleanup after previous OOM crash — resolved by rebuilding lockfile.  
+System ready for <ClerkProvider> wrap and middleware config next.
+
