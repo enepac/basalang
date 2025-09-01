@@ -1,12 +1,17 @@
 import "../styles/globals.css";
-import { ClerkProvider, UserButton } from '@clerk/nextjs';
+import { ClerkProvider, UserButton } from "@clerk/nextjs";
+import AuthDebug from "@/components/AuthDebug";
 
 export const metadata = {
   title: "Basalang",
   description: "Stealth AI Interview Copilot",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <ClerkProvider>
       <html lang="en">
@@ -15,9 +20,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div>
               <h1 className="font-bold text-xl mb-4">Basalang</h1>
               <nav className="space-y-2">
-                <a href="/session" className="block hover:underline">Session</a>
-                <a href="/practice" className="block hover:underline">Practice</a>
-                <a href="/docs" className="block hover:underline">Docs</a>
+                <a href="/session" className="block hover:underline">
+                  Session
+                </a>
+                <a href="/practice" className="block hover:underline">
+                  Practice
+                </a>
+                <a href="/docs" className="block hover:underline">
+                  Docs
+                </a>
               </nav>
             </div>
             <div className="mt-6">
@@ -26,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </aside>
           <main className="flex-1 p-6">
             {children}
+            <AuthDebug /> {/* 👈 dev-only auth state */}
             <footer className="mt-10 text-sm text-gray-500 border-t pt-4">
               Status: ASR inactive • Flags: default
             </footer>
