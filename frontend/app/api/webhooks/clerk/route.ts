@@ -1,38 +1,34 @@
+// /workspaces/basalang/frontend/app/api/webhooks/clerk/route.ts
 import { NextResponse } from "next/server";
 import { Webhook } from "svix";
 
 export async function POST(req: Request) {
-  const secret = process.env.CLERK_WEBHOOK_SECRET;
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
-  if (!secret) {
-    return new NextResponse("Missing Clerk webhook secret", { status: 500 });
+  if (!WEBHOOK_SECRET) {
+    return new Response("Missing Clerk webhook secret", { status: 500 });
   }
 
   const payload = await req.text();
-  const headers = {
-    "svix-id": req.headers.get("svix-id") ?? "",
-    "svix-timestamp": req.headers.get("svix-timestamp") ?? "",
-    "svix-signature": req.headers.get("svix-signature") ?? "",
-  };
+  const headers = Object.fromEntries(req.headers.entries());
 
-  const wh = new Webhook(secret);
+  const wh = new Webhook(WEBHOOK_SECRET);
 
   let evt: any;
 
   try {
-    evt = wh.verify(payload, headers) as {
-      type: string;
-      data: { id: string };
-    };
+    evt = wh.verify(payload, headers);
   } catch (err) {
-    console.error("❌ Clerk webhook signature verification failed:", err);
-    return new NextResponse("Invalid signature", { status: 400 });
+    return new Response("Webhook signature verification failed", {
+      status: 400,
+    });
   }
 
-  const eventType = evt.type;
-  const userId = evt.data?.id ?? "unknown";
+  const { type, data } = evt;
 
-  console.log(`🔔 Clerk webhook: ${eventType} (user ${userId})`);
+  console.log("🔔 Clerk webhook received:");
+  console.log("Event type:", type);
+  console.log("Event data:", JSON.stringify(data, null, 2));
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ received: true });
 }

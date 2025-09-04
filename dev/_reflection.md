@@ -49,3 +49,4 @@ Clerk added to frontend as auth backbone.
 Install required cleanup after previous OOM crash — resolved by rebuilding lockfile.  
 System ready for <ClerkProvider> wrap and middleware config next.
 
+- [S1-T11] Implemented Clerk webhook signature verification using `svix` with a dynamic Next.js API route. Webhook endpoint is now live and secure.
