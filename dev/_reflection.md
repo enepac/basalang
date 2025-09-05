@@ -74,3 +74,21 @@ Always add `**/.pnpm-store/` and similar to `.gitignore` early. Artifacts should
 
 - **Next Time:** Avoid committing large package manager caches (.pnpm-store) that can exceed GitHub file limits.
 
+## S1-T13D Reflection
+
+- 🧠 Learned that Supabase schema updates can require cache refresh
+- 🧪 First end-to-end test from Supabase → Next.js → public web access via ngrok
+- 🌐 Hetzner remote DevContainer required DNS patch to resolve `supabase.co`
+- 📦 Installed `ngrok` as a temp workaround until proper cloud deploy
+- 🚧 Skipped UFW config because container firewall is abstracted
+
+## 🧠 Reflection — 2025-09-05
+
+### Task: `S1-T13: Supabase Integration`
+
+- Encountered real-world constraint: Hetzner container blocks outgoing DNS to Supabase.
+- Applied secure fallback using `ngrok` to expose localhost.
+- This tested Supabase + frontend round-trip flow in a cloud-agnostic way.
+- Entire backend integration pattern can now be replicated for future tables.
+- 🔁 Confirmed effectiveness of execution protocol (`Commit → Tag → Push → Journal → Reflect`).
+
