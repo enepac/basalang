@@ -50,3 +50,27 @@ Install required cleanup after previous OOM crash — resolved by rebuilding loc
 System ready for <ClerkProvider> wrap and middleware config next.
 
 - [S1-T11] Implemented Clerk webhook signature verification using `svix` with a dynamic Next.js API route. Webhook endpoint is now live and secure.
+
+## 2025-09-02 — Git Recovery Reflection
+
+Today, we hit a hard GitHub limit due to `.pnpm-store` being accidentally versioned. Pushes failed due to 100MB+ files. After investigating, we used `git-filter-repo` to surgically delete the store from the entire history. This was risky but necessary. Push succeeded after cleanup.
+
+**Key Learning:**  
+Always add `**/.pnpm-store/` and similar to `.gitignore` early. Artifacts should never be committed. Also, know how to safely rewrite history and recover from Git deadlocks.
+
+✅ Crisis resolved. Moving forward smarter.
+
+
+---
+
+```md
+### [S1-T12] Reflection — Clerk Webhook Endpoint Integration
+
+- **Decision Point:** Clerk recommends using `svix` for secure webhook verification.
+- **Initial Attempt:** Tried using `@clerk/clerk-sdk-node`, but it was deprecated. Adjusted approach by switching to `svix`.
+- **Challenge:** TS errors flagged `evt` as `unknown`. Solved by explicitly asserting `evt` as `Record<string, any>`, since no event typing exists from Clerk.
+- **Security Consideration:** Ensured `CLERK_WEBHOOK_SECRET` is never exposed and used only server-side.
+- **Verification:** Confirmed production build passed (`pnpm build`) with webhook route `λ /api/webhooks/clerk`.
+
+- **Next Time:** Avoid committing large package manager caches (.pnpm-store) that can exceed GitHub file limits.
+
