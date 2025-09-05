@@ -1,17 +1,21 @@
 {
   "name": "@basalang/shared",
   "version": "0.1.0",
-  "main": "index.ts",
   "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": "./dist/index.js"
   },
-  "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
   "devDependencies": {
-    "@types/node": "^20.19.13",
-    "typescript": "^5.9.2"
+    "typescript": "^5.4.5",
+    "@types/node": "^20.11.19"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0"
-  }
+  },
+  "license": "MIT"
 }

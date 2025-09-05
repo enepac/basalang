@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "allowJs": false,
     "checkJs": false,
@@ -10,7 +10,14 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@basalang/shared": ["packages/shared"],
+      "@/*": ["frontend/*"]
+    }
   },
+  "references": [    
+    { "path": "packages/shared" }
+  ],
   "exclude": ["node_modules", "dist"]
 }

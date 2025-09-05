@@ -12,6 +12,7 @@
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@clerk/nextjs": "^6.31.6",
     "@supabase/supabase-js": "^2.57.0",
+    "@basalang/shared": "workspace:*",
     "next": "14.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

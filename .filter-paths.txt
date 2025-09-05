@@ -1,0 +1,16 @@
+# SAFE FILTER PATHS
+node_modules/
+.pnpm-store/
+frontend/node_modules/
+frontend/.pnpm-store/
+backend/node_modules/
+backend/.pnpm-store/
+packages/shared/node_modules/
+packages/shared/.pnpm-store/
+packages/web/node_modules/
+packages/web/.pnpm-store/
+packages/shared/next-swc.linux-x64-gnu.node
+packages/shared/next-swc-lmusl.node
+
+# DO NOT include this line:
+# .gitignore
