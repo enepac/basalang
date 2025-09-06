@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 export default function MicTest() {
   const [status, setStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -14,6 +16,26 @@ export default function MicTest() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
         setStatus('granted');
+
+        // Create audio context
+        const audioCtx = new AudioContext();
+        audioCtxRef.current = audioCtx;
+
+        const source = audioCtx.createMediaStreamSource(stream);
+
+        // ScriptProcessorNode: 4096 buffer size, 1 input, 1 output
+        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+        processorRef.current = processor;
+
+        processor.onaudioprocess = (event) => {
+          const inputBuffer = event.inputBuffer.getChannelData(0);
+          console.log('🔊 Audio buffer received. Length:', inputBuffer.length);
+          // This is where waveform sampling will occur later
+        };
+
+        source.connect(processor);
+        processor.connect(audioCtx.destination); // required to keep audio pipeline alive
+
       } catch (err) {
         console.error('❌ Mic permission denied', err);
         setStatus('denied');
@@ -23,8 +45,10 @@ export default function MicTest() {
     requestMic();
 
     return () => {
-      // Clean up stream if user navigates away
+      // Cleanup media stream + audio context
       streamRef.current?.getTracks().forEach((track) => track.stop());
+      processorRef.current?.disconnect();
+      audioCtxRef.current?.close();
     };
   }, []);
 

@@ -141,3 +141,42 @@ Scaffolded a developer-only `MicTest.tsx` component for browser mic permission t
 - Final tag: `S2-T01A`  
 - Branch: `phase/2`
 
+## 🔁 S2-T01B Reflection — Auto Mic + Waveform Scaffold
+
+**What was done:**  
+Automatically requested microphone permissions in dev-only `MicTest`. Scaffolded a waveform canvas box and tracked status changes.
+
+---
+
+### ✅ What Went Well
+
+- `useEffect()` worked smoothly for auto mic prompt
+- Browser permission behavior was predictable and consistent
+- Ngrok testing proved stable and reproducible
+- UI states (`idle`, `granted`, etc.) visually confirmed live
+
+---
+
+### ⚠️ What Didn’t Go Smoothly
+
+- Canvas currently static — needs future animation logic
+- No visual indicator yet for rejected mic access
+- Dynamic import path problems carried over from previous task
+
+---
+
+### 💡 Lessons & Decisions
+
+- Use `ref` for managing media streams cleanly on unmount
+- Always pair auto-permission logic with visible user feedback
+- Mic status display helps debugging before waveform logic is added
+
+---
+
+### 🔐 Safeguards Recap
+
+- Tagged: `S2-T01B`
+- Verified live via `ngrok`
+- Covered in `journal-2025-09-05.md`
+
+
