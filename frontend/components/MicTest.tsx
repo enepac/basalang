@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function MicTest() {
   const [status, setStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
+  const [vadStatus, setVadStatus] = useState<'speaking' | 'silent'>('silent');
   const streamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -29,12 +30,24 @@ export default function MicTest() {
         processor.onaudioprocess = (event) => {
           const input = event.inputBuffer.getChannelData(0);
           waveformDataRef.current = new Float32Array(input);
+
+          // === VAD detection ===
+          const rms = Math.sqrt(input.reduce((sum, val) => sum + val * val, 0) / input.length);
+          const threshold = 0.02;
+          const speaking = rms > threshold;
+
+          setVadStatus((prev) => {
+            const next = speaking ? 'speaking' : 'silent';
+            if (prev !== next) {
+              console.log(speaking ? '🎤 Speaking...' : '🤫 Silent...');
+            }
+            return next;
+          });
         };
 
         source.connect(processor);
         processor.connect(audioCtx.destination);
 
-        // Animation loop
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext('2d');
 
@@ -51,13 +64,13 @@ export default function MicTest() {
 
           ctx.beginPath();
           ctx.lineWidth = 2;
-          ctx.strokeStyle = '#2563eb'; // blue-600
+          ctx.strokeStyle = vadStatus === 'speaking' ? '#16a34a' : '#2563eb'; // green if speaking
 
           const sliceWidth = width / len;
 
           for (let i = 0; i < len; i++) {
             const x = i * sliceWidth;
-            const y = (data[i] * 0.5 + 0.5) * height; // normalize to [0, height]
+            const y = (data[i] * 0.5 + 0.5) * height;
             if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
@@ -90,7 +103,7 @@ export default function MicTest() {
       <h3 className="mb-2 font-semibold text-gray-800">🎙️ MicTest Component (Dev Only)</h3>
 
       <p className="text-gray-600">
-        Mic status: <strong>{status}</strong>
+        Mic status: <strong>{status}</strong> &nbsp;|&nbsp; VAD: <strong>{vadStatus}</strong>
       </p>
 
       <div className="mt-4">
@@ -100,7 +113,7 @@ export default function MicTest() {
           width={640}
           height={80}
         />
-        <p className="text-xs text-gray-400 mt-1">[Live waveform]</p>
+        <p className="text-xs text-gray-400 mt-1">[Live waveform + VAD color feedback]</p>
       </div>
     </div>
   );

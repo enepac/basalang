@@ -220,3 +220,42 @@ Wired mic input to an `AudioContext` stream using `ScriptProcessorNode`. Capture
 - Journaled and committed on `phase/2`
 - Live tested via `ngrok` with working console output
 
+---
+
+## 🔁 S2-T01D Reflection — Mic Waveform Animation
+
+**What was done:**  
+Implemented live waveform animation inside `MicTest.tsx` by streaming mic data through a `ScriptProcessorNode`, then visualizing it via `canvas` using `requestAnimationFrame()`.
+
+---
+
+### ✅ What Went Well
+
+- Canvas and audio pipeline integrated seamlessly
+- Frame rate held steady (smooth rendering)
+- Amplitude normalized correctly with visible waveform response
+- Worked instantly via `ngrok` with no auth or permission issues
+
+---
+
+### ⚠️ What Didn’t Go Smoothly
+
+- Browser warning for deprecated `ScriptProcessorNode` (known and accepted)
+- Hardcoded canvas size (640x80) might need later responsiveness
+
+---
+
+### 💡 Lessons & Decisions
+
+- `ScriptProcessorNode` is sufficient for dev — migration to `AudioWorklet` only if needed
+- Canvas gives lightweight control for custom rendering (vs. libraries)
+- Animation loop can serve double duty: waveform + VAD (future)
+- Start buffering audio data for fingerprinting in parallel
+
+---
+
+### 🔐 Safeguards Recap
+
+- Git Tag: `S2-T01D`
+- Journaled in `journal-2025-09-05.md`
+- Dev tested and validated via `ngrok`
