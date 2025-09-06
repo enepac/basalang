@@ -1,9 +1,13 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "composite": true,
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "NodeNext",                  // ✅ required by Next.js/TS interop
+    "moduleResolution": "NodeNext",        // ✅ must match module type
     "target": "ES2022",
     "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "preserve",

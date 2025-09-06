@@ -1,6 +1,7 @@
 'use client';
 
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
+import MicTest from '@/components/MicTest';
 
 export default function SessionPage() {
   return (
@@ -39,6 +40,9 @@ export default function SessionPage() {
           >
             ▶️ Send Dummy Audio Chunk
           </button>
+
+          {/* Only show mic test in dev */}
+          {process.env.NODE_ENV === 'development' && <MicTest />}
         </section>
       </SignedIn>
 

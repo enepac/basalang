@@ -92,3 +92,13 @@ Always add `**/.pnpm-store/` and similar to `.gitignore` early. Artifacts should
 - Entire backend integration pattern can now be replicated for future tables.
 - 🔁 Confirmed effectiveness of execution protocol (`Commit → Tag → Push → Journal → Reflect`).
 
+### [S1-T14] Reflection — ASR Scaffold & Server Util
+
+- 👣 Transitioned from static Supabase testing to dynamic streaming foundation.
+- 🔐 Clerk-protected route ensures only signed-in users can access ASR tools.
+- 🔧 Created `/api/asr/stream` to accept raw binary — prepares for Whisper/FFmpeg.
+- 🔄 Live tested from public `ngrok` tunnel → route hit + JSON response verified.
+- 🧪 Learned to log and trace binary POSTs across layers (Next.js App Router)
+- 🧼 Frontend button handler now includes full error handling and dev console logs.
+
+
