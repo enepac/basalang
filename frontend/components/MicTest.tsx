@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 export default function MicTest() {
   const [status, setStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const [vadStatus, setVadStatus] = useState<'speaking' | 'silent'>('silent');
+  const [isCapturing, setIsCapturing] = useState(false);
+  const voiceprintRef = useRef<Float32Array | null>(null);
+
   const streamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -27,6 +30,8 @@ export default function MicTest() {
         const processor = audioCtx.createScriptProcessor(2048, 1, 1);
         processorRef.current = processor;
 
+        const capturedChunks: Float32Array[] = [];
+
         processor.onaudioprocess = (event) => {
           const input = event.inputBuffer.getChannelData(0);
           waveformDataRef.current = new Float32Array(input);
@@ -43,6 +48,21 @@ export default function MicTest() {
             }
             return next;
           });
+
+          // === Voiceprint capture ===
+          if (isCapturing) {
+            capturedChunks.push(new Float32Array(input));
+            const durationSec = capturedChunks.length * 2048 / audioCtx.sampleRate;
+            if (durationSec >= 1) {
+              const combined = new Float32Array(capturedChunks.length * 2048);
+              capturedChunks.forEach((chunk, i) => {
+                combined.set(chunk, i * 2048);
+              });
+              voiceprintRef.current = combined;
+              setIsCapturing(false);
+              console.log('🔐 Voiceprint fingerprint stored:', combined.slice(0, 5), '... (truncated)');
+            }
+          }
         };
 
         source.connect(processor);
@@ -64,7 +84,7 @@ export default function MicTest() {
 
           ctx.beginPath();
           ctx.lineWidth = 2;
-          ctx.strokeStyle = vadStatus === 'speaking' ? '#16a34a' : '#2563eb'; // green if speaking
+          ctx.strokeStyle = vadStatus === 'speaking' ? '#16a34a' : '#2563eb';
 
           const sliceWidth = width / len;
 
@@ -94,7 +114,7 @@ export default function MicTest() {
       audioCtxRef.current?.close();
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, []);
+  }, [isCapturing]);
 
   if (process.env.NODE_ENV !== 'development') return null;
 
@@ -113,8 +133,20 @@ export default function MicTest() {
           width={640}
           height={80}
         />
-        <p className="text-xs text-gray-400 mt-1">[Live waveform + VAD color feedback]</p>
+        <p className="text-xs text-gray-400 mt-1">[Live waveform + VAD + voiceprint]</p>
       </div>
+
+      <button
+        onClick={() => {
+          if (!isCapturing) {
+            setIsCapturing(true);
+            console.log('🎙️ Capturing voiceprint… Please speak for 1 second.');
+          }
+        }}
+        className="mt-4 px-4 py-2 rounded text-white bg-amber-600 hover:bg-amber-700"
+      >
+        🔐 Capture Voiceprint
+      </button>
     </div>
   );
 }

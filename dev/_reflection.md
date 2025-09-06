@@ -259,3 +259,20 @@ Implemented live waveform animation inside `MicTest.tsx` by streaming mic data t
 - Git Tag: `S2-T01D`
 - Journaled in `journal-2025-09-05.md`
 - Dev tested and validated via `ngrok`
+
+## 🔁 Reflection — S2-T01E: Voice Activity Detection (VAD)
+
+Adding VAD elevated the MicTest from passive waveform to active input awareness. By mapping volume to RMS and exposing `speaking` vs `silent` states, we now have a dependable signal for deciding when to trigger ASR, visual alerts, or suppress unnecessary processing.
+
+### What went well:
+- Visual + programmatic VAD feedback works cleanly
+- No perceptible lag between audio and visual feedback
+- Code separation (buffer handling vs VAD state) remains modular
+
+### What could be improved:
+- RMS-based detection may be sensitive to background hum — consider future filtering or ML-based VAD later
+- Currently logs status every transition — might want to debounce in final version
+
+### Key Insight:
+This layer forms the foundation of all audio responsiveness — from real-time ASR to live interviewer detection — and should remain observable, testable, and override-friendly even in production builds.
+
