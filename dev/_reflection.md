@@ -179,4 +179,44 @@ Automatically requested microphone permissions in dev-only `MicTest`. Scaffolded
 - Verified live via `ngrok`
 - Covered in `journal-2025-09-05.md`
 
+---
+
+## 🔁 S2-T01C Reflection — AudioBuffer Wiring
+
+**What was done:**  
+Wired mic input to an `AudioContext` stream using `ScriptProcessorNode`. Captured and logged real-time audio buffer data for future waveform analysis.
+
+---
+
+### ✅ What Went Well
+
+- Real-time audio processing worked without special config
+- ScriptProcessorNode simple to wire and validate
+- Logs showed constant 4096-length audio buffers
+- No bugs, race conditions, or user-side issues
+
+---
+
+### ⚠️ What Didn’t Go Smoothly
+
+- Browser warns `ScriptProcessorNode` is deprecated
+- Required connecting to `destination` to stay alive (undocumented edge case)
+- No visible waveform yet — placeholder only
+
+---
+
+### 💡 Lessons & Decisions
+
+- Web Audio API provides low-latency, in-browser processing for mic input
+- Can defer migrating to `AudioWorklet` until we hit real performance needs
+- Logs are helpful but waveform rendering needs to be visual soon
+- Buffer size of 4096 is a safe baseline
+
+---
+
+### 🔐 Safeguards Recap
+
+- Tag: `S2-T01C`
+- Journaled and committed on `phase/2`
+- Live tested via `ngrok` with working console output
 
