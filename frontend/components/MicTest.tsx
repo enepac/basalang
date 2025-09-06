@@ -16,6 +16,18 @@ export default function MicTest() {
   const animationRef = useRef<number | null>(null);
   const waveformDataRef = useRef<Float32Array>(new Float32Array(0));
 
+  const vadStatusRef = useRef<'speaking' | 'silent'>('silent');
+  const matchStatusRef = useRef<'match' | 'no-match' | 'unknown'>('unknown');
+
+  const bufferingRef = useRef(false);
+  const segmentStartRef = useRef<number | null>(null);
+  const segmentQueueRef = useRef<Float32Array[]>([]);
+  const vadSilenceDebounceRef = useRef<number | null>(null);
+  const segmentSilenceRef = useRef<number | null>(null);
+  const segmentCooldownRef = useRef<number>(0);
+
+  const lastVoiceprintLogRef = useRef<number>(0);
+
   useEffect(() => {
     const requestMic = async () => {
       setStatus('requesting');
@@ -35,6 +47,30 @@ export default function MicTest() {
 
         processor.onaudioprocess = (event) => {
           const inputData = event.inputBuffer.getChannelData(0);
+          waveformDataRef.current = new Float32Array(inputData);
+          const now = Date.now();
+
+          // === Debounced VAD Detection ===
+          const rms = Math.sqrt(inputData.reduce((sum, val) => sum + val * val, 0) / inputData.length);
+          const threshold = 0.02;
+          const isNowSpeaking = rms > threshold;
+
+          if (isNowSpeaking) {
+            if (vadStatusRef.current !== 'speaking') {
+              vadStatusRef.current = 'speaking';
+              setVadStatus('speaking');
+              console.log('🎤 Speaking...');
+            }
+            vadSilenceDebounceRef.current = null;
+          } else {
+            if (!vadSilenceDebounceRef.current) vadSilenceDebounceRef.current = now;
+            const silentFor = now - vadSilenceDebounceRef.current;
+            if (silentFor >= 250 && vadStatusRef.current !== 'silent') {
+              vadStatusRef.current = 'silent';
+              setVadStatus('silent');
+              console.log('🤫 Silent...');
+            }
+          }
 
           // === Voiceprint Filtering ===
           if (voiceprintRef.current) {
@@ -44,31 +80,71 @@ export default function MicTest() {
               sumDiff += Math.abs(inputData[i] - voiceprintRef.current[i]);
             }
             const avgDiff = sumDiff / N;
-            console.log('📏 Voiceprint distance:', avgDiff.toFixed(5)); // ⬅️ ADD THIS LINE
+
+            if (process.env.NODE_ENV === 'development' && now - lastVoiceprintLogRef.current >= 250) {
+              console.log('📏 Voiceprint distance:', avgDiff.toFixed(5));
+              lastVoiceprintLogRef.current = now;
+            }
 
             const isMatch = avgDiff < 0.02;
             setMatchStatus(isMatch ? 'match' : 'no-match');
+            matchStatusRef.current = isMatch ? 'match' : 'no-match';
             if (!isMatch) return;
           } else {
             setMatchStatus('unknown');
+            matchStatusRef.current = 'unknown';
           }
 
-          waveformDataRef.current = new Float32Array(inputData);
+          // === Segment Buffering ===
+          const SEGMENT_MS = 750;
+          const GRACE_SILENCE_MS = 250;
+          const COOLDOWN_MS = 500;
 
-          // === VAD detection ===
-          const rms = Math.sqrt(inputData.reduce((sum, val) => sum + val * val, 0) / inputData.length);
-          const threshold = 0.02;
-          const speaking = rms > threshold;
+          const isSpeaking = vadStatusRef.current === 'speaking';
+          const isMatching = matchStatusRef.current === 'match';
 
-          setVadStatus((prev) => {
-            const next = speaking ? 'speaking' : 'silent';
-            if (prev !== next) {
-              console.log(speaking ? '🎤 Speaking...' : '🤫 Silent...');
+          if (isSpeaking && isMatching) {
+            if (!bufferingRef.current && now - segmentCooldownRef.current >= COOLDOWN_MS) {
+              bufferingRef.current = true;
+              segmentStartRef.current = now;
+              segmentQueueRef.current = [];
+              console.log('🟢 Segment buffering started');
             }
-            return next;
-          });
 
-          // === Voiceprint capture ===
+            if (bufferingRef.current) {
+              segmentQueueRef.current.push(new Float32Array(inputData));
+              const elapsed = now - (segmentStartRef.current ?? 0);
+              console.log(`⏱️ Segment buffering: elapsed=${elapsed}ms, chunks=${segmentQueueRef.current.length}`);
+
+              if (elapsed >= SEGMENT_MS) {
+                bufferingRef.current = false;
+                const totalSamples = segmentQueueRef.current.reduce((acc, buf) => acc + buf.length, 0);
+                console.log(`✅ Segment complete: ${segmentQueueRef.current.length} chunks, ${totalSamples} samples`);
+                segmentQueueRef.current = [];
+                segmentStartRef.current = null;
+                segmentSilenceRef.current = null;
+                segmentCooldownRef.current = now;
+              }
+            }
+
+            segmentSilenceRef.current = null;
+          } else {
+            if (bufferingRef.current) {
+              if (!segmentSilenceRef.current) segmentSilenceRef.current = now;
+              const silentFor = now - segmentSilenceRef.current;
+
+              if (silentFor >= GRACE_SILENCE_MS) {
+                bufferingRef.current = false;
+                console.warn('⚠️ Segment interrupted after silence — discarded');
+                segmentQueueRef.current = [];
+                segmentStartRef.current = null;
+                segmentSilenceRef.current = null;
+                segmentCooldownRef.current = now;
+              }
+            }
+          }
+
+          // === Voiceprint Capture ===
           if (isCapturing) {
             capturedChunks.push(new Float32Array(inputData));
             const durationSec = capturedChunks.length * 2048 / audioCtx.sampleRate;
@@ -104,8 +180,8 @@ export default function MicTest() {
           ctx.beginPath();
           ctx.lineWidth = 2;
           ctx.strokeStyle =
-            vadStatus === 'speaking'
-              ? matchStatus === 'match'
+            vadStatusRef.current === 'speaking'
+              ? matchStatusRef.current === 'match'
                 ? '#16a34a'
                 : '#dc2626'
               : '#2563eb';
