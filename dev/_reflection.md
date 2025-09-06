@@ -101,4 +101,43 @@ Always add `**/.pnpm-store/` and similar to `.gitignore` early. Artifacts should
 - 🧪 Learned to log and trace binary POSTs across layers (Next.js App Router)
 - 🧼 Frontend button handler now includes full error handling and dev console logs.
 
+## 🔁 S2-T01A Reflection — MicTest Component
+
+**What was done:**  
+Scaffolded a developer-only `MicTest.tsx` component for browser mic permission testing. Mounted it under `/session` during development mode.
+
+---
+
+### ✅ What Went Well
+
+- TypeScript setup caught early path issues
+- Component was isolated and dev-scoped from the start
+- Final build runs clean with strict TS, ESLint, and Next.js
+- Verified successfully via ngrok public test
+
+---
+
+### ⚠️ What Didn’t Go Smoothly
+
+- Dynamic import using `.tsx` extension broke under `moduleResolution: node16`
+- Required multiple refactors (dynamic → static import → alias + config patch)
+- TypeScript rejected `.js` imports due to missing declaration files
+- ESLint showed errors due to babel parser conflict (Next.js dev keys)
+
+---
+
+### 💡 Lessons & Decisions
+
+- **Use static imports** for internal components unless server/client boundary requires dynamic loading
+- Always maintain `.tsx` for components with JSX — renaming to `.js` just to bypass TS is a bad trade
+- Stick to `module: NodeNext` and match with `moduleResolution: NodeNext` to avoid conflicts
+- Path aliasing (`@/`) is worth setting up early to prevent relative path hell
+
+---
+
+### 🔐 Safeguards Recap
+
+- Snapshots + rollback validated before committing
+- Final tag: `S2-T01A`  
+- Branch: `phase/2`
 
