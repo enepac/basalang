@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 export default function MicTest() {
   const [status, setStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const [vadStatus, setVadStatus] = useState<'speaking' | 'silent'>('silent');
+  const [matchStatus, setMatchStatus] = useState<'match' | 'no-match' | 'unknown'>('unknown');
   const [isCapturing, setIsCapturing] = useState(false);
   const voiceprintRef = useRef<Float32Array | null>(null);
 
@@ -33,11 +34,29 @@ export default function MicTest() {
         const capturedChunks: Float32Array[] = [];
 
         processor.onaudioprocess = (event) => {
-          const input = event.inputBuffer.getChannelData(0);
-          waveformDataRef.current = new Float32Array(input);
+          const inputData = event.inputBuffer.getChannelData(0);
+
+          // === Voiceprint Filtering ===
+          if (voiceprintRef.current) {
+            const N = Math.min(inputData.length, voiceprintRef.current.length);
+            let sumDiff = 0;
+            for (let i = 0; i < N; i++) {
+              sumDiff += Math.abs(inputData[i] - voiceprintRef.current[i]);
+            }
+            const avgDiff = sumDiff / N;
+            console.log('📏 Voiceprint distance:', avgDiff.toFixed(5)); // ⬅️ ADD THIS LINE
+
+            const isMatch = avgDiff < 0.02;
+            setMatchStatus(isMatch ? 'match' : 'no-match');
+            if (!isMatch) return;
+          } else {
+            setMatchStatus('unknown');
+          }
+
+          waveformDataRef.current = new Float32Array(inputData);
 
           // === VAD detection ===
-          const rms = Math.sqrt(input.reduce((sum, val) => sum + val * val, 0) / input.length);
+          const rms = Math.sqrt(inputData.reduce((sum, val) => sum + val * val, 0) / inputData.length);
           const threshold = 0.02;
           const speaking = rms > threshold;
 
@@ -51,7 +70,7 @@ export default function MicTest() {
 
           // === Voiceprint capture ===
           if (isCapturing) {
-            capturedChunks.push(new Float32Array(input));
+            capturedChunks.push(new Float32Array(inputData));
             const durationSec = capturedChunks.length * 2048 / audioCtx.sampleRate;
             if (durationSec >= 1) {
               const combined = new Float32Array(capturedChunks.length * 2048);
@@ -84,7 +103,12 @@ export default function MicTest() {
 
           ctx.beginPath();
           ctx.lineWidth = 2;
-          ctx.strokeStyle = vadStatus === 'speaking' ? '#16a34a' : '#2563eb';
+          ctx.strokeStyle =
+            vadStatus === 'speaking'
+              ? matchStatus === 'match'
+                ? '#16a34a'
+                : '#dc2626'
+              : '#2563eb';
 
           const sliceWidth = width / len;
 
@@ -123,7 +147,13 @@ export default function MicTest() {
       <h3 className="mb-2 font-semibold text-gray-800">🎙️ MicTest Component (Dev Only)</h3>
 
       <p className="text-gray-600">
-        Mic status: <strong>{status}</strong> &nbsp;|&nbsp; VAD: <strong>{vadStatus}</strong>
+        Mic status: <strong>{status}</strong>
+        {' | '}
+        VAD: <strong>{vadStatus}</strong>
+        {' | '}
+        Match: <strong className={matchStatus === 'match' ? 'text-green-600' : matchStatus === 'no-match' ? 'text-red-600' : 'text-gray-400'}>
+          {matchStatus}
+        </strong>
       </p>
 
       <div className="mt-4">
@@ -133,7 +163,7 @@ export default function MicTest() {
           width={640}
           height={80}
         />
-        <p className="text-xs text-gray-400 mt-1">[Live waveform + VAD + voiceprint]</p>
+        <p className="text-xs text-gray-400 mt-1">[Live waveform + fingerprint-based filtering]</p>
       </div>
 
       <button

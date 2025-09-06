@@ -276,3 +276,14 @@ Adding VAD elevated the MicTest from passive waveform to active input awareness.
 ### Key Insight:
 This layer forms the foundation of all audio responsiveness — from real-time ASR to live interviewer detection — and should remain observable, testable, and override-friendly even in production builds.
 
+---
+
+### 🪞 Reflection — S2-T01F
+
+Voiceprint capture introduces our first personalization layer for ASR filtering.  
+Using a single-sample fingerprint (mean of 1-second buffer) is a simple yet practical starting point.  
+The challenge will be differentiating the speaker in multi-speaker sessions — this lays the groundwork.
+
+Color-coded feedback and continuous calibration are possible future enhancements.
+
+---
