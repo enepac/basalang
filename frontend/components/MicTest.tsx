@@ -2,6 +2,48 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+function float32ToWavBlob(chunks: Float32Array[], sampleRate: number): Blob {
+  const totalLength = chunks.reduce((sum, arr) => sum + arr.length, 0);
+  const merged = new Float32Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  const pcmData = new DataView(new ArrayBuffer(merged.length * 2));
+  for (let i = 0; i < merged.length; i++) {
+    const s = Math.max(-1, Math.min(1, merged[i]));
+    pcmData.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+
+  const wavHeader = new ArrayBuffer(44);
+  const view = new DataView(wavHeader);
+  const writeStr = (v: DataView, offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) v.setUint8(offset + i, str.charCodeAt(i));
+  };
+
+  writeStr(view, 0, 'RIFF');
+  view.setUint32(4, 36 + pcmData.byteLength, true);
+  writeStr(view, 8, 'WAVE');
+  writeStr(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(view, 36, 'data');
+  view.setUint32(40, pcmData.byteLength, true);
+
+  const wavBuffer = new Uint8Array(44 + pcmData.byteLength);
+  wavBuffer.set(new Uint8Array(wavHeader), 0);
+  wavBuffer.set(new Uint8Array(pcmData.buffer), 44);
+
+  return new Blob([wavBuffer], { type: 'audio/wav' });
+}
+
 export default function MicTest() {
   const [status, setStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const [vadStatus, setVadStatus] = useState<'speaking' | 'silent'>('silent');
@@ -50,7 +92,6 @@ export default function MicTest() {
           waveformDataRef.current = new Float32Array(inputData);
           const now = Date.now();
 
-          // === Debounced VAD Detection ===
           const rms = Math.sqrt(inputData.reduce((sum, val) => sum + val * val, 0) / inputData.length);
           const threshold = 0.02;
           const isNowSpeaking = rms > threshold;
@@ -72,13 +113,10 @@ export default function MicTest() {
             }
           }
 
-          // === Voiceprint Filtering ===
           if (voiceprintRef.current) {
             const N = Math.min(inputData.length, voiceprintRef.current.length);
             let sumDiff = 0;
-            for (let i = 0; i < N; i++) {
-              sumDiff += Math.abs(inputData[i] - voiceprintRef.current[i]);
-            }
+            for (let i = 0; i < N; i++) sumDiff += Math.abs(inputData[i] - voiceprintRef.current[i]);
             const avgDiff = sumDiff / N;
 
             if (process.env.NODE_ENV === 'development' && now - lastVoiceprintLogRef.current >= 250) {
@@ -95,11 +133,9 @@ export default function MicTest() {
             matchStatusRef.current = 'unknown';
           }
 
-          // === Segment Buffering ===
           const SEGMENT_MS = 750;
           const GRACE_SILENCE_MS = 250;
           const COOLDOWN_MS = 500;
-
           const isSpeaking = vadStatusRef.current === 'speaking';
           const isMatching = matchStatusRef.current === 'match';
 
@@ -118,8 +154,9 @@ export default function MicTest() {
 
               if (elapsed >= SEGMENT_MS) {
                 bufferingRef.current = false;
-                const totalSamples = segmentQueueRef.current.reduce((acc, buf) => acc + buf.length, 0);
-                console.log(`✅ Segment complete: ${segmentQueueRef.current.length} chunks, ${totalSamples} samples`);
+                const chunks = [...segmentQueueRef.current];
+                const blob = float32ToWavBlob(chunks, audioCtx.sampleRate);
+                console.log('✅ Segment complete → WAV Blob:', blob);
                 segmentQueueRef.current = [];
                 segmentStartRef.current = null;
                 segmentSilenceRef.current = null;
@@ -144,18 +181,15 @@ export default function MicTest() {
             }
           }
 
-          // === Voiceprint Capture ===
           if (isCapturing) {
             capturedChunks.push(new Float32Array(inputData));
             const durationSec = capturedChunks.length * 2048 / audioCtx.sampleRate;
             if (durationSec >= 1) {
               const combined = new Float32Array(capturedChunks.length * 2048);
-              capturedChunks.forEach((chunk, i) => {
-                combined.set(chunk, i * 2048);
-              });
+              capturedChunks.forEach((chunk, i) => combined.set(chunk, i * 2048));
               voiceprintRef.current = combined;
               setIsCapturing(false);
-              console.log('🔐 Voiceprint fingerprint stored:', combined.slice(0, 5), '... (truncated)');
+              console.log('🔐 Voiceprint fingerprint stored:', combined.slice(0, 5), '...');
             }
           }
         };
@@ -168,31 +202,21 @@ export default function MicTest() {
 
         const render = () => {
           if (!ctx || !canvas) return;
-
-          const width = canvas.width;
-          const height = canvas.height;
-
+          const width = canvas.width, height = canvas.height;
           ctx.clearRect(0, 0, width, height);
-
-          const data = waveformDataRef.current;
-          const len = data.length;
+          const data = waveformDataRef.current, len = data.length;
 
           ctx.beginPath();
           ctx.lineWidth = 2;
-          ctx.strokeStyle =
-            vadStatusRef.current === 'speaking'
-              ? matchStatusRef.current === 'match'
-                ? '#16a34a'
-                : '#dc2626'
-              : '#2563eb';
+          ctx.strokeStyle = vadStatusRef.current === 'speaking'
+            ? matchStatusRef.current === 'match' ? '#16a34a' : '#dc2626'
+            : '#2563eb';
 
           const sliceWidth = width / len;
-
           for (let i = 0; i < len; i++) {
             const x = i * sliceWidth;
             const y = (data[i] * 0.5 + 0.5) * height;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
           }
 
           ctx.stroke();
@@ -209,7 +233,7 @@ export default function MicTest() {
     requestMic();
 
     return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current?.getTracks().forEach((t) => t.stop());
       processorRef.current?.disconnect();
       audioCtxRef.current?.close();
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
@@ -221,17 +245,13 @@ export default function MicTest() {
   return (
     <div className="mt-4 rounded-lg border border-gray-300 p-4 text-sm shadow-sm">
       <h3 className="mb-2 font-semibold text-gray-800">🎙️ MicTest Component (Dev Only)</h3>
-
       <p className="text-gray-600">
-        Mic status: <strong>{status}</strong>
-        {' | '}
-        VAD: <strong>{vadStatus}</strong>
-        {' | '}
+        Mic status: <strong>{status}</strong>{' | '}
+        VAD: <strong>{vadStatus}</strong>{' | '}
         Match: <strong className={matchStatus === 'match' ? 'text-green-600' : matchStatus === 'no-match' ? 'text-red-600' : 'text-gray-400'}>
           {matchStatus}
         </strong>
       </p>
-
       <div className="mt-4">
         <canvas
           ref={canvasRef}
@@ -241,7 +261,6 @@ export default function MicTest() {
         />
         <p className="text-xs text-gray-400 mt-1">[Live waveform + fingerprint-based filtering]</p>
       </div>
-
       <button
         onClick={() => {
           if (!isCapturing) {
