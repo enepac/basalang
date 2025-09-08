@@ -287,3 +287,28 @@ The challenge will be differentiating the speaker in multi-speaker sessions — 
 Color-coded feedback and continuous calibration are possible future enhancements.
 
 ---
+### S2-T01H Reflection
+
+This task was an important real-time systems challenge. While the goal (buffering voice-matched speech) seemed straightforward, real-world constraints surfaced quickly:
+
+- VAD signal needed smoothing — raw RMS was too noisy
+- Buffering and cooldown had to be tightly coordinated to avoid false triggers
+- Debugging required deep log visibility across state transitions
+- Git push repeatedly failed due to giant `.tar.gz` snapshot files — requiring surgical cleanup of Git history using `git-filter-repo`
+
+The final system now robustly detects and buffers segments based on voice match, duration, silence gaps, and debounce-tuned VAD signals. This creates a strong foundation for Whisper ASR integration in the next step.
+
+### S2-T01I Reflection
+
+This task encapsulated the audio pipeline's transition from raw stream to usable file format. Implementing a robust WAV encoder in-browser proved more reliable than relying on third-party libraries.
+
+Key realizations:
+- The WAV header is simple but unforgiving; getting byte offsets right was essential.
+- Segment timing and grace periods directly affect how clean the audio Blob is.
+- Logs played a crucial role in verifying proper cutoff, match state, and encoding.
+
+This completes the "listen + filter + segment + encode" pipeline, readying audio for Whisper ASR.
+
+### S2-T01J-A Reflection
+
+This task added runtime flexibility to our audio transcription layer. Abstracting the backend via `transcribeWithProvider` ensures we can plug-and-play new providers later. The architecture aligns with our directive-based execution flow and prepares us for low-latency, fail-safe live captioning.

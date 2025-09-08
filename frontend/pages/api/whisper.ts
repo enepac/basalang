@@ -1,36 +1,44 @@
-// frontend/pages/api/whisper.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import formidable from 'formidable';
+import formidable, { File } from 'formidable';
 import fs from 'fs';
-import { parse } from 'path';
-import { createReadStream } from 'fs';
 import { transcribeWithProvider } from '@/lib/whisperRouter';
 
+// Disable default body parser
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
-  const form = new formidable.IncomingForm({ keepExtensions: true });
+  const form = formidable({ keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
-    if (err) return res.status(500).json({ error: 'Form parsing error' });
+    if (err) {
+      console.error('Form parse error:', err);
+      return res.status(500).json({ error: 'Form parsing error' });
+    }
 
-    const file = files.file;
-    if (!file || Array.isArray(file)) return res.status(400).json({ error: 'Missing audio file' });
+    const provider = (fields.provider?.[0] || 'openai') as string;
+    const file = Array.isArray(files.file) ? files.file[0] : files.file;
+
+    if (!file || !file.filepath) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
 
     try {
-      const filePath = (file as formidable.File).filepath;
-      const stream = createReadStream(filePath);
-      const text = await transcribeWithProvider(stream);
-      return res.status(200).json({ text });
+      const transcript = await transcribeWithProvider(provider, file.filepath);
+      res.status(200).json({ transcript });
     } catch (error) {
       console.error('Transcription error:', error);
-      return res.status(500).json({ error: 'Transcription failed' });
+      res.status(500).json({ error: 'Transcription failed' });
     }
   });
 }
